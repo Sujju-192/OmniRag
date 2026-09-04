@@ -78,7 +78,7 @@ async def ask_question(request: QueryRequest):
 
         # Chain Execution
         prompt = PromptTemplate(
-            template="You are a helpful assistant. Help me to generate a correct output for the given question:\n{question}\nAnswer only from the given context:\n{context}\nIf there is not enough information in the context, say 'I don't know' but don't hallucinate.",
+            template="You are a helpful assistant. Help me to generate a correct output for the given question:\n{question}\nAnswer only from the given context:\n{context}\nIf there is not enough information in the context, say 'No Information Found in the video' but don't hallucinate.",
             input_variables=["question", "context"]
         )
         parser = StrOutputParser()
