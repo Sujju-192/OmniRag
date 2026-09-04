@@ -1,7 +1,7 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Landing from "./Components/Landing";
-import YouTubeChat from "./Components/YouTubeChat";
+import Landing from "./Components/Landing.jsx";
+import YouTubeChat from "./Components/YoutubeChat.jsx";
 
 export default function App() {
   return (
