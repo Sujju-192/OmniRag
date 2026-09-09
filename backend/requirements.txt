@@ -1,0 +1,18 @@
+fastapi                  → FastAPI backend
+uvicorn[standard]        → Run the FastAPI server
+python-multipart         → Required for UploadFile / File(...)
+python-dotenv            → .env / GOOGLE_API_KEY
+
+pydantic                 → BaseModel / request validation
+PyPDF2                    → Reading PDFs
+
+langchain                 → Core LangChain package
+langchain-core            → Runnables, prompts, output parsers
+langchain-classic         → create_retrieval_chain, create_stuff_documents_chain
+langchain-community       → Chroma integration
+langchain-text-splitters  → RecursiveCharacterTextSplitter
+langchain-google-genai    → Gemini LLM + Gemini embeddings
+
+chromadb                  → Vector database
+
+youtube-transcript-api   → YouTube transcript extraction
