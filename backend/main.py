@@ -3,8 +3,9 @@ import uuid
 import os
 import traceback
 from typing import Dict
+import time
 
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from langchain_core.output_parsers import StrOutputParser
 from pydantic import BaseModel
@@ -150,6 +151,10 @@ async def chat_with_pdf(request: ChatRequest):
 #         YOUTUBE RAG ENDPOINT
 # ==========================================
 
+UPLOAD_COOLDOWN = 30  # seconds
+
+last_upload_time = {}
+
 class YouTubeUploadRequest(BaseModel):
     video_id: str
 
@@ -196,26 +201,59 @@ Question:
 
 
 @app.post("/uploadLink")
-async def upload_video_link(request: YouTubeUploadRequest):
+async def upload_video_link(
+    request: YouTubeUploadRequest,
+    http_request: Request
+):
     try:
-        video_id = request.video_id
-        if not video_id:
-            raise HTTPException(status_code=400, detail="YouTube video ID is required.")
+        client_ip = http_request.client.host
 
-        print("Video Link Incoming")
+        current_time = time.time()
+
+        # Check cooldown
+        if client_ip in last_upload_time:
+            elapsed = current_time - last_upload_time[client_ip]
+
+            if elapsed < UPLOAD_COOLDOWN:
+                remaining = int(UPLOAD_COOLDOWN - elapsed)
+
+                raise HTTPException(
+                    status_code=429,
+                    detail=f"Please wait {remaining} seconds before processing another video."
+                )
+
+        # Start cooldown immediately when request is accepted
+        last_upload_time[client_ip] = current_time
+
+        video_id = request.video_id
+
+        if not video_id:
+            raise HTTPException(
+                status_code=400,
+                detail="YouTube video ID is required."
+            )
+
         yt_api = YouTubeTranscriptApi()
 
-        transcript_list = yt_api.fetch(video_id, languages=["en-IN", "en"])
+        transcript_list = yt_api.fetch(
+            video_id,
+            languages=["en-IN", "en"]
+        )
 
         transcript = " ".join(
-            chunk.text
-            for chunk in transcript_list
+            chunk.text for chunk in transcript_list
         )
 
         if not transcript.strip():
-            raise HTTPException(status_code=400, detail="No transcript found for this video.")
+            raise HTTPException(
+                status_code=400,
+                detail="No transcript found for this video."
+            )
 
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=2000,chunk_overlap=250)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=2000,
+            chunk_overlap=250
+        )
 
         chunks = text_splitter.create_documents([transcript])
 
@@ -231,7 +269,6 @@ async def upload_video_link(request: YouTubeUploadRequest):
         raise
 
     except Exception as e:
-
         print("\n" + "=" * 50)
         print("🚨 ERROR DURING VIDEO UPLOAD:")
         traceback.print_exc()

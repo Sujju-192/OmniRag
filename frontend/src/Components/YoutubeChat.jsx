@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+
 import {
   ArrowLeft,
   Sparkles,
@@ -6,6 +7,7 @@ import {
   MessageCircle,
   Bot,
 } from "lucide-react";
+
 import { useNavigate } from "react-router-dom";
 
 export default function YouTubeChat() {
@@ -20,6 +22,44 @@ export default function YouTubeChat() {
 
   const [videoUploaded, setVideoUploaded] = useState(false);
   const [error, setError] = useState("");
+
+  // ==========================================
+  // 30 SECOND UPLOAD COOLDOWN
+  // ==========================================
+
+  const COOLDOWN_SECONDS = 30;
+
+  const [cooldown, setCooldown] = useState(() => {
+    const lastUpload = localStorage.getItem("youtube_last_upload");
+
+    if (!lastUpload) return 0;
+
+    const elapsed = Math.floor(
+      (Date.now() - Number(lastUpload)) / 1000
+    );
+
+    return elapsed < COOLDOWN_SECONDS
+      ? COOLDOWN_SECONDS - elapsed
+      : 0;
+  });
+
+  // Countdown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const apiUrl =
     import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -58,6 +98,17 @@ export default function YouTubeChat() {
     setError("");
     setAnswer("");
 
+    // ------------------------------------------
+    // Check 30 second cooldown
+    // ------------------------------------------
+
+    if (cooldown > 0) {
+      setError(
+        `Please wait ${cooldown} seconds before processing another video.`
+      );
+      return;
+    }
+
     const videoId = extractVideoId(youtubeUrl);
 
     if (!videoId) {
@@ -69,6 +120,9 @@ export default function YouTubeChat() {
     setVideoUploaded(false);
 
     try {
+      console.log("📤 Sending video to backend...");
+      console.log("🎥 Video ID:", videoId);
+
       const response = await fetch(`${apiUrl}/uploadLink`, {
         method: "POST",
         headers: {
@@ -81,18 +135,31 @@ export default function YouTubeChat() {
 
       const data = await response.json();
 
+      console.log("📥 Backend response:", data);
+
       if (!response.ok) {
         throw new Error(
           data.detail || "Failed to process the YouTube video."
         );
       }
 
-      console.log("Video processed:", data);
+      console.log("✅ Video processed successfully");
 
       setVideoUploaded(true);
 
+      // ------------------------------------------
+      // Start 30 second cooldown
+      // ------------------------------------------
+
+      localStorage.setItem(
+        "youtube_last_upload",
+        Date.now().toString()
+      );
+
+      setCooldown(COOLDOWN_SECONDS);
+
     } catch (err) {
-      console.error("Upload error:", err);
+      console.error("❌ Upload error:", err);
 
       setError(
         err.message ||
@@ -129,6 +196,9 @@ export default function YouTubeChat() {
     setAsking(true);
 
     try {
+      console.log("💬 Sending question to backend...");
+      console.log("❓ Question:", query);
+
       const response = await fetch(`${apiUrl}/ask`, {
         method: "POST",
         headers: {
@@ -141,6 +211,8 @@ export default function YouTubeChat() {
 
       const data = await response.json();
 
+      console.log("📥 Answer response:", data);
+
       if (!response.ok) {
         throw new Error(
           data.detail || "Failed to get an answer."
@@ -150,7 +222,7 @@ export default function YouTubeChat() {
       setAnswer(data.answer);
 
     } catch (err) {
-      console.error("Question error:", err);
+      console.error("❌ Question error:", err);
 
       setError(
         err.message ||
@@ -162,15 +234,21 @@ export default function YouTubeChat() {
     }
   };
 
+  // ==========================================
+  // UI
+  // ==========================================
+
   return (
     <div className="min-h-screen bg-slate-50 relative overflow-hidden flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8">
 
       {/* Background Glow */}
+
       <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-b from-indigo-100 to-transparent blur-[120px] rounded-full opacity-60 pointer-events-none" />
 
       <div className="max-w-2xl w-full mx-auto relative z-10">
 
         {/* Header */}
+
         <button
           onClick={() => navigate("/")}
           className="group flex items-center gap-2 text-slate-500 hover:text-indigo-600 mb-8 transition-colors font-bold text-sm bg-white/50 px-4 py-2 rounded-full border border-slate-200 backdrop-blur-sm w-fit shadow-sm"
@@ -180,16 +258,21 @@ export default function YouTubeChat() {
         </button>
 
         {/* Main Card */}
+
         <div className="bg-white/70 backdrop-blur-2xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/80 p-8 sm:p-10 transition-all">
 
           {/* Title */}
+
           <div className="flex items-center gap-4 mb-8">
 
             <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-violet-500 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/30">
+
               <Bot className="w-6 h-6 text-white" />
+
             </div>
 
             <div>
+
               <h2 className="text-2xl font-extrabold text-slate-900">
                 Ask the AI
               </h2>
@@ -197,6 +280,7 @@ export default function YouTubeChat() {
               <p className="text-slate-500 font-medium text-sm">
                 Analyze any video in seconds.
               </p>
+
             </div>
 
           </div>
@@ -213,8 +297,11 @@ export default function YouTubeChat() {
             <div className="space-y-1.5">
 
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">
+
                 <Video className="w-4 h-4 text-red-500" />
+
                 Video URL
+
               </label>
 
               <input
@@ -235,7 +322,7 @@ export default function YouTubeChat() {
 
             <button
               type="submit"
-              disabled={uploading}
+              disabled={uploading || cooldown > 0}
               className="w-full py-4 bg-slate-900 hover:bg-indigo-600 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-lg rounded-2xl transition-all duration-300 shadow-[0_4px_14px_0_rgba(15,23,42,0.39)] flex items-center justify-center gap-3"
             >
 
@@ -260,10 +347,13 @@ export default function YouTubeChat() {
                       fill="currentColor"
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
+
                   </svg>
 
                   Processing Transcript...
                 </>
+              ) : cooldown > 0 ? (
+                `Please wait ${cooldown}s`
               ) : (
                 "Process Video"
               )}
@@ -271,6 +361,17 @@ export default function YouTubeChat() {
             </button>
 
           </form>
+
+          {/* Cooldown message */}
+
+          {cooldown > 0 && !uploading && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-100 rounded-xl text-amber-700 text-sm font-semibold text-center">
+              ⏳ You can process another video in{" "}
+              <span className="font-extrabold">
+                {cooldown} seconds
+              </span>
+            </div>
+          )}
 
           {/* Success Message */}
 
@@ -292,8 +393,11 @@ export default function YouTubeChat() {
             <div className="space-y-1.5">
 
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500 ml-1">
+
                 <MessageCircle className="w-4 h-4 text-blue-500" />
+
                 Your Question
+
               </label>
 
               <input
@@ -334,6 +438,7 @@ export default function YouTubeChat() {
                       fill="currentColor"
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
+
                   </svg>
 
                   Thinking...
