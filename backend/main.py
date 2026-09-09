@@ -202,6 +202,7 @@ async def upload_video_link(request: YouTubeUploadRequest):
         if not video_id:
             raise HTTPException(status_code=400, detail="YouTube video ID is required.")
 
+        print("Video Link Incoming")
         yt_api = YouTubeTranscriptApi()
 
         transcript_list = yt_api.fetch(video_id, languages=["en-IN", "en"])
