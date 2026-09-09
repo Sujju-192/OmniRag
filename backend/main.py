@@ -58,6 +58,14 @@ class YouTubeRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     answer: str
+    
+    
+@app.get("/")
+def test():
+    return {
+        "status": "success",
+        "message": "Backend is running"
+    }
 
 # ==========================================
 #         PDF RAG ENDPOINTS
