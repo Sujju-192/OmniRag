@@ -27,9 +27,27 @@ from langchain_core.runnables import RunnablePassthrough, RunnableParallel, Runn
 
 # YouTube Imports
 from youtube_transcript_api import YouTubeTranscriptApi
-import youtube_transcript_api
+from youtube_transcript_api.proxies import GenericProxyConfig
 
 load_dotenv()
+
+YOUTUBE_PROXY_HOST = os.getenv("YOUTUBE_PROXY_HOST")
+YOUTUBE_PROXY_PORT = os.getenv("YOUTUBE_PROXY_PORT")
+YOUTUBE_PROXY_USERNAME = os.getenv("YOUTUBE_PROXY_USERNAME")
+YOUTUBE_PROXY_PASSWORD = os.getenv("YOUTUBE_PROXY_PASSWORD")
+
+if all([
+    YOUTUBE_PROXY_HOST,
+    YOUTUBE_PROXY_PORT,
+    YOUTUBE_PROXY_USERNAME,
+    YOUTUBE_PROXY_PASSWORD
+]):
+    youtube_proxy_config = GenericProxyConfig(
+        http_url=f"http://{YOUTUBE_PROXY_USERNAME}:{YOUTUBE_PROXY_PASSWORD}@{YOUTUBE_PROXY_HOST}:{YOUTUBE_PROXY_PORT}",
+        https_url=f"http://{YOUTUBE_PROXY_USERNAME}:{YOUTUBE_PROXY_PASSWORD}@{YOUTUBE_PROXY_HOST}:{YOUTUBE_PROXY_PORT}"
+    )
+else:
+    youtube_proxy_config = None
 
 embedding_model = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
 llm_model = ChatGoogleGenerativeAI(model="gemini-2.5-flash")
@@ -241,7 +259,12 @@ async def upload_video_link(
                 detail="YouTube video ID is required."
             )
 
-        yt_api = YouTubeTranscriptApi()
+        if youtube_proxy_config:
+            yt_api = YouTubeTranscriptApi(
+                proxy_config=youtube_proxy_config
+            )
+        else:
+            yt_api = YouTubeTranscriptApi()
 
         transcript_list = yt_api.fetch(
             video_id,
