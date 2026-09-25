@@ -102,13 +102,12 @@ export default function Landing() {
           {/* Right column – Product screenshot placeholder */}
           <div className="hidden lg:block">
             <div className="relative">
-              {/* Placeholder for an actual product screenshot/image */}
-              <div className="aspect-[4/3] rounded-2xl bg-white border-2 border-dashed border-slate-300 flex items-center justify-center shadow-xl shadow-slate-200/50 overflow-hidden">
-                <div className="text-center text-slate-400">
-                  <Sparkles className="w-16 h-16 mx-auto mb-4 text-blue-400" />
-                  <p className="font-medium">Product screenshot placeholder</p>
-                  <p className="text-sm">Add your dashboard or demo image here</p>
-                </div>
+              <div className="rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-xl shadow-slate-200/50 overflow-hidden p-2">
+                <img 
+                  src="/assets/architecture.png"
+                  alt="OmniRAG System Architecture" 
+                  className="w-full h-auto object-contain rounded-xl"
+                />
               </div>
 
               {/* Decorative floating elements */}
