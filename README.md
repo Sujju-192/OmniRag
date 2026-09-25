@@ -101,30 +101,9 @@ The result is a fast, accurate, and scalable multimodal RAG platform that answer
 
 ## 🏗️ System Architecture
 
-```text
-                          User Query
-                              │
-                ┌─────────────┴─────────────┐
-                │                           │
-          PDF Upload                  YouTube Link
-                │                           │
-      PyPDF2 Text Extraction      Transcript Extraction
-                │                           │
-      Recursive Text Splitter      Recursive Text Splitter
-                └─────────────┬─────────────┘
-                              │
-                    Gemini Embeddings
-                              │
-                      Chroma Vector Store
-                              │
-                  Similarity Search (Top-K)
-                              │
-                    LangChain Retrieval
-                              │
-                 Gemini 2.5 Flash Response
-                              │
-                    Context-Grounded Answer
-```
+<p align="center">
+  <img src="./assets/architecture.png" alt="OmniRAG Architecture" width="100%"/>
+</p>
 
 ---
 
